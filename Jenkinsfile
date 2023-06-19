@@ -10,16 +10,20 @@ node {
     stage('Sonar Scan') {
         withSonarQubeEnv('SonarCloud') {
             def mavenHome= tool name: "Maven_3.9.2", type: "maven" 
-            sh """
+            withCredentials([
+                string(credentialsId: 'MAK_SonarLogin', variable: 'sonarLoginKey'),
+            ]) {
+                 sh """
                 ${mavenHome}/bin/mvn clean verify sonar:sonar \\
                 -Dsonar.host.url=https://sonarcloud.io \\
-                -Dsonar.login=13941b4a76363eb74e34f8f7b391f5fad7991d76 \\
+                -Dsonar.login=${sonarLoginKey} \\
                 -Dsonar.organization=monika-ashokkumar \\
                 -Dsonar.projectKey=Monika-Ashokkumar_java-web-app-docker \\
                 -Dsonar.java.binaries=src/main 
                 """
         }
-    }
+        }
+    }    
     stage("Build Docker Image"){
         sh "docker build -t monikaashokkumar/java-web-app:${buildNumber} ."
     }
