@@ -1,40 +1,31 @@
-node{
+node {
     def buildNumber = BUILD_NUMBER
-    stage('SCM Checkout'){
-        git url: 'https://github.com/p2pro-DevOps/java-web-app-docker.git',branch: 'master'
+    stage('Checkout') {
+        git url: 'https://github.com/Monika-Ashokkumar/java-web-app-docker.git',  branch: 'master'
     }
-    
-    stage(" Maven Clean Package"){
-      def mavenHome =  tool name: "Maven-3.5.6", type: "maven"
-      def mavenCMD = "${mavenHome}/bin/mvn"
-      sh "${mavenCMD} clean package"
-      
-    } 
-    
-    
-    stage('Build Docker Image'){
-        sh 'docker build -t dockerp2pro/java-web-app:${buildNumber} .'
+    stage("Maven Build"){
+       def mavenHome= tool name: "Maven_3.9.2", type: "maven" 
+       sh "${mavenHome}/bin/mvn clean package"
     }
-    
-    stage('Push Docker Image'){
-        withCredentials([string(credentialsId: 'Docker_Hub_Pwd', variable: 'Docker_Hub_Pwd')]) {
-          sh "docker login -u dockerp2pro -p ${Docker_Hub_Pwd}"
+    stage('Sonar Scan') {
+        withSonarQubeEnv('SonarCloud') {
+            def mavenHome= tool name: "Maven_3.9.2", type: "maven" 
+            sh """
+                ${mavenHome}/bin/mvn clean verify sonar:sonar \\
+                -Dsonar.host.url=https://sonarcloud.io \\
+                -Dsonar.login=13941b4a76363eb74e34f8f7b391f5fad7991d76 \\
+                -Dsonar.organization=monika-ashokkumar \\
+                -Dsonar.projectKey=Monika-Ashokkumar_java-web-app-docker \\
+                -Dsonar.java.binaries=src/main 
+                """
         }
-        sh 'docker push dockerp2pro/java-web-app'
-     }
-     
-      stage('Run Docker Image In Dev Server'){
-        
-        def dockerRun = ' docker run  -d -p 8080:8080 --name java-web-app dockerp2pro/java-web-app:${buildNumber}'
-         
-         sshagent(['DOCKER_SERVER']) {
-          sh 'ssh -o StrictHostKeyChecking=no ubuntu@172.31.20.72 docker stop java-web-app || true'
-          sh 'ssh  ubuntu@172.31.20.72 docker rm java-web-app || true'
-          sh 'ssh  ubuntu@172.31.20.72 docker rmi -f  $(docker images -q) || true'
-          sh "ssh  ubuntu@172.31.20.72 ${dockerRun}"
-       }
-       
     }
-     
-     
+    stage("Build Docker Image"){
+        sh "docker build -t monikaashokkumar/java-web-app:${buildNumber} ."
+    }
+    //stage("Login and Push Docker Image") {
+    //    withDockerRegistry([credentialsId: "MAK_dockerhub", url:"https://hub.docker.com/repository/docker/monikaashokkumar/java-web-app/general"]) {
+    //        docker.push()
+    //    }
+    //}
 }
