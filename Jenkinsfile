@@ -23,9 +23,4 @@ node {
     stage("Build Docker Image"){
         sh "docker build -t monikaashokkumar/java-web-app:${buildNumber} ."
     }
-    //stage("Login and Push Docker Image") {
-    //    withDockerRegistry([credentialsId: "MAK_dockerhub", url:"https://hub.docker.com/repository/docker/monikaashokkumar/java-web-app/general"]) {
-    //        docker.push()
-    //    }
-    //}
 }
